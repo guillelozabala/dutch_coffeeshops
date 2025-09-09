@@ -1,0 +1,6 @@
+torch
+transformers
+pdf2image
+pillow
+tabula-py
+pandas
