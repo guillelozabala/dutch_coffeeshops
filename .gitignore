@@ -179,3 +179,10 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Local/generated plot outputs
+.DS_Store
+data/.DS_Store
+figures/
+geodata/
+Rplots.pdf
