@@ -11,6 +11,9 @@ geojson_file <- file.path(geodata_dir, "cbs_gemeenten_2022_gegeneraliseerd.geojs
 output_file_1999 <- file.path(output_dir, "coffeeshop_access_kriging_1999.png")
 output_file_2022 <- file.path(output_dir, "coffeeshop_access_kriging_2022.png")
 output_file_change <- file.path(output_dir, "coffeeshop_access_kriging_change_1999_2022.png")
+output_file_1999_clean <- file.path(output_dir, "coffeeshop_access_kriging_1999_no_title_no_source.png")
+output_file_2022_clean <- file.path(output_dir, "coffeeshop_access_kriging_2022_no_title_no_source.png")
+output_file_change_clean <- file.path(output_dir, "coffeeshop_access_kriging_change_1999_2022_no_title_no_source.png")
 
 font_family <- "Palatino Linotype"
 font_file <- "Palatino Linotype.ttf"
@@ -173,8 +176,12 @@ prediction_change$distance_change_km <- prediction_2022$distance_km - prediction
 
 max_distance <- ceiling(max(prediction_1999$distance_km, prediction_2022$distance_km, na.rm = TRUE) / 10) * 10
 max_abs_change <- ceiling(max(abs(prediction_change$distance_change_km), na.rm = TRUE) / 10) * 10
+change_scale_values <- scales::rescale(
+  c(-max_abs_change, -2, 0, 2, max_abs_change),
+  from = c(-max_abs_change, max_abs_change)
+)
 
-make_kriging_map <- function(prediction_df, year, output_file) {
+make_kriging_map <- function(prediction_df, year, output_file, include_title_source = TRUE) {
   map <- ggplot() +
     geom_raster(
       data = prediction_df,
@@ -189,8 +196,8 @@ make_kriging_map <- function(prediction_df, year, output_file) {
       name = "Kriged distance\nto nearest\ncoffeeshop\nmunicipality (km)"
     ) +
     labs(
-      title = paste("Kriged Access to Coffeeshop Municipalities,", year),
-      caption = "Ordinary kriging of municipality-centroid nearest-distance values; clipped to CBS/PDOK 2022 boundaries."
+      title = if (include_title_source) paste("Kriged Access to Coffeeshop Municipalities,", year) else NULL,
+      caption = if (include_title_source) "Ordinary kriging of municipality-centroid nearest-distance values; clipped to CBS/PDOK 2022 boundaries." else NULL
     ) +
     theme_void(base_family = font_family) +
     theme(
@@ -205,7 +212,7 @@ make_kriging_map <- function(prediction_df, year, output_file) {
   ggsave(output_file, plot = map, width = 7, height = 8, dpi = 300, bg = "white")
 }
 
-make_kriging_change_map <- function(prediction_df, output_file) {
+make_kriging_change_map <- function(prediction_df, output_file, include_title_source = TRUE) {
   map <- ggplot() +
     geom_raster(
       data = prediction_df,
@@ -214,19 +221,17 @@ make_kriging_change_map <- function(prediction_df, output_file) {
     ) +
     geom_sf(data = gemeenten_rd, fill = NA, color = "white", linewidth = 0.08) +
     coord_sf(expand = FALSE) +
-    scale_fill_gradient2(
-      low = "#006BFF",
-      mid = "#F7F7F7",
-      high = "#9E0142",
-      midpoint = 0,
+    scale_fill_gradientn(
+      colors = c("#341C1C", "#6F5D59", "#BFC4B9", "#75896F", "#4B644A"),
+      values = change_scale_values,
       limits = c(-max_abs_change, max_abs_change),
       breaks = seq(-max_abs_change, max_abs_change, length.out = 5),
       labels = function(x) sprintf("%g", x),
       name = "Kriged change\nin nearest\ndistance (km)"
     ) +
     labs(
-      title = "Kriged Change in Access, 1999-2022",
-      caption = "Negative values mean the nearest coffeeshop municipality became closer; positive values mean farther."
+      title = if (include_title_source) "Kriged Change in Access, 1999-2022" else NULL,
+      caption = if (include_title_source) "Negative values mean the nearest coffeeshop municipality became closer; positive values mean farther." else NULL
     ) +
     theme_void(base_family = font_family) +
     theme(
@@ -244,7 +249,13 @@ make_kriging_change_map <- function(prediction_df, output_file) {
 make_kriging_map(prediction_1999, 1999, output_file_1999)
 make_kriging_map(prediction_2022, 2022, output_file_2022)
 make_kriging_change_map(prediction_change, output_file_change)
+make_kriging_map(prediction_1999, 1999, output_file_1999_clean, include_title_source = FALSE)
+make_kriging_map(prediction_2022, 2022, output_file_2022_clean, include_title_source = FALSE)
+make_kriging_change_map(prediction_change, output_file_change_clean, include_title_source = FALSE)
 
 message("Saved 1999 kriging access map to ", output_file_1999)
 message("Saved 2022 kriging access map to ", output_file_2022)
 message("Saved kriging access change map to ", output_file_change)
+message("Saved no-title/no-source 1999 kriging access map to ", output_file_1999_clean)
+message("Saved no-title/no-source 2022 kriging access map to ", output_file_2022_clean)
+message("Saved no-title/no-source kriging access change map to ", output_file_change_clean)

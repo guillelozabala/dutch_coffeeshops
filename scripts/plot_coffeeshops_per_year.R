@@ -9,6 +9,10 @@ output_file_no_title_no_source <- file.path(
   output_dir,
   "coffeeshops_per_year_no_title_no_source.png"
 )
+output_file_no_title_no_source_map_size <- file.path(
+  output_dir,
+  "coffeeshops_per_year_no_title_no_source_map_size.png"
+)
 font_family <- "Palatino Linotype"
 font_file <- "Palatino Linotype.ttf"
 
@@ -22,7 +26,7 @@ coffeeshops <- read.csv(
   na.strings = "-"
 )
 
-year_columns <- setdiff(names(coffeeshops), "Gemeente")
+year_columns <- grep("^[0-9]{4}$", names(coffeeshops), value = TRUE)
 
 coffeeshops_by_year <- data.frame(
   year = as.integer(year_columns),
@@ -59,6 +63,29 @@ plot_no_title <- base_plot
 plot_no_title_no_source <- base_plot +
   labs(caption = NULL)
 
+plot_no_title_no_source_map_size <- ggplot(
+  coffeeshops_by_year,
+  aes(x = year, y = coffeeshops)
+) +
+  geom_line(color = "#4B644A", linewidth = 1.3) +
+  geom_point(color = "#4B644A", size = 4) +
+  scale_x_continuous(breaks = coffeeshops_by_year$year) +
+  scale_y_continuous(
+    labels = scales::comma,
+    limits = c(500, 900)
+  ) +
+  labs(
+    x = NULL,
+    y = "Number of coffeeshops"
+  ) +
+  theme_minimal(base_size = 12, base_family = font_family) +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.title.y = element_text(size = 16, margin = margin(r = 16)),
+    axis.text = element_text(size = 13),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 ggsave(output_file, plot = plot, width = 9, height = 5, dpi = 300)
 ggsave(output_file_no_title, plot = plot_no_title, width = 9, height = 5, dpi = 300)
@@ -69,7 +96,15 @@ ggsave(
   height = 5,
   dpi = 300
 )
+ggsave(
+  output_file_no_title_no_source_map_size,
+  plot = plot_no_title_no_source_map_size,
+  width = 7,
+  height = 8,
+  dpi = 300
+)
 
 message("Saved figure to ", output_file)
 message("Saved no-title figure to ", output_file_no_title)
 message("Saved no-title/no-source figure to ", output_file_no_title_no_source)
+message("Saved map-sized no-title/no-source figure to ", output_file_no_title_no_source_map_size)

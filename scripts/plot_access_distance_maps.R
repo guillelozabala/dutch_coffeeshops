@@ -10,6 +10,9 @@ geojson_file <- file.path(geodata_dir, "cbs_gemeenten_2022_gegeneraliseerd.geojs
 output_file_1999 <- file.path(output_dir, "coffeeshop_access_distance_1999.png")
 output_file_2022 <- file.path(output_dir, "coffeeshop_access_distance_2022.png")
 output_file_change <- file.path(output_dir, "coffeeshop_access_distance_change_1999_2022.png")
+output_file_1999_clean <- file.path(output_dir, "coffeeshop_access_distance_1999_no_title_no_source.png")
+output_file_2022_clean <- file.path(output_dir, "coffeeshop_access_distance_2022_no_title_no_source.png")
+output_file_change_clean <- file.path(output_dir, "coffeeshop_access_distance_change_1999_2022_no_title_no_source.png")
 
 font_family <- "Palatino Linotype"
 font_file <- "Palatino Linotype.ttf"
@@ -261,8 +264,12 @@ map_data <- map_data[order(map_data$group, map_data$order), ]
 
 max_distance <- ceiling(max(map_data$distance_km_1999, map_data$distance_km_2022, na.rm = TRUE) / 10) * 10
 max_abs_change <- ceiling(max(abs(map_data$distance_change_km), na.rm = TRUE) / 10) * 10
+change_scale_values <- scales::rescale(
+  c(-max_abs_change, -2, 0, 2, max_abs_change),
+  from = c(-max_abs_change, max_abs_change)
+)
 
-make_distance_map <- function(year, output_file) {
+make_distance_map <- function(year, output_file, include_title_source = TRUE) {
   distance_column <- paste0("distance_km_", year)
   plot_data <- map_data
   plot_data$distance_km <- plot_data[[distance_column]]
@@ -281,8 +288,8 @@ make_distance_map <- function(year, output_file) {
       name = "Distance\nto nearest\ncoffeeshop\nmunicipality (km)"
     ) +
     labs(
-      title = paste("Access to Coffeeshop Municipalities,", year),
-      caption = "Distance from 2022 municipality centroid to nearest municipality with >0 coffeeshops."
+      title = if (include_title_source) paste("Access to Coffeeshop Municipalities,", year) else NULL,
+      caption = if (include_title_source) "Distance from 2022 municipality centroid to nearest municipality with >0 coffeeshops." else NULL
     ) +
     theme_void(base_family = font_family) +
     theme(
@@ -297,7 +304,7 @@ make_distance_map <- function(year, output_file) {
   ggsave(output_file, plot = map, width = 7, height = 8, dpi = 300, bg = "white")
 }
 
-make_change_map <- function(output_file) {
+make_change_map <- function(output_file, include_title_source = TRUE) {
   map <- ggplot(map_data) +
     geom_polygon(
       aes(x = lon, y = lat, group = group, fill = distance_change_km),
@@ -305,19 +312,17 @@ make_change_map <- function(output_file) {
       linewidth = 0.08
     ) +
     coord_quickmap(expand = FALSE) +
-    scale_fill_gradient2(
-      low = "#006BFF",
-      mid = "#F7F7F7",
-      high = "#9E0142",
-      midpoint = 0,
+    scale_fill_gradientn(
+      colors = c("#341C1C", "#6F5D59", "#BFC4B9", "#75896F", "#4B644A"),
+      values = change_scale_values,
       limits = c(-max_abs_change, max_abs_change),
       breaks = seq(-max_abs_change, max_abs_change, length.out = 5),
       labels = function(x) sprintf("%g", x),
       name = "Change in\nnearest distance\n(km)"
     ) +
     labs(
-      title = "Change in Access, 1999-2022",
-      caption = "Negative values mean the nearest coffeeshop municipality became closer; positive values mean farther."
+      title = if (include_title_source) "Change in Access, 1999-2022" else NULL,
+      caption = if (include_title_source) "Negative values mean the nearest coffeeshop municipality became closer; positive values mean farther." else NULL
     ) +
     theme_void(base_family = font_family) +
     theme(
@@ -335,9 +340,15 @@ make_change_map <- function(output_file) {
 make_distance_map(1999, output_file_1999)
 make_distance_map(2022, output_file_2022)
 make_change_map(output_file_change)
+make_distance_map(1999, output_file_1999_clean, include_title_source = FALSE)
+make_distance_map(2022, output_file_2022_clean, include_title_source = FALSE)
+make_change_map(output_file_change_clean, include_title_source = FALSE)
 
 message("Saved 1999 access-distance map to ", output_file_1999)
 message("Saved 2022 access-distance map to ", output_file_2022)
 message("Saved access-distance change map to ", output_file_change)
+message("Saved no-title/no-source 1999 access-distance map to ", output_file_1999_clean)
+message("Saved no-title/no-source 2022 access-distance map to ", output_file_2022_clean)
+message("Saved no-title/no-source access-distance change map to ", output_file_change_clean)
 message("Maximum nearest distance in 1999: ", round(max(access_data$distance_km_1999), 1), " km")
 message("Maximum nearest distance in 2022: ", round(max(access_data$distance_km_2022), 1), " km")
