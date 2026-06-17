@@ -185,4 +185,5 @@ cython_debug/
 data/.DS_Store
 figures/
 geodata/
+euda_data/
 Rplots.pdf

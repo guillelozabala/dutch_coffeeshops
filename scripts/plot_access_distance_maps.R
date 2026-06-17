@@ -313,7 +313,7 @@ make_change_map <- function(output_file, include_title_source = TRUE) {
     ) +
     coord_quickmap(expand = FALSE) +
     scale_fill_gradientn(
-      colors = c("#341C1C", "#6F5D59", "#BFC4B9", "#75896F", "#4B644A"),
+      colors = c("#4B644A", "#75896F", "#BFC4B9", "#6F5D59", "#341C1C"),
       values = change_scale_values,
       limits = c(-max_abs_change, max_abs_change),
       breaks = seq(-max_abs_change, max_abs_change, length.out = 5),
